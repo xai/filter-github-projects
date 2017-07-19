@@ -55,13 +55,11 @@ def get_num_entries(url, key, arg=None):
         url = ''.join([url, '&', arg])
 
     response = query(url)
-    link = response.headers.get('Link', None)
-    if link:
+    last_link =  response.links.get('last', None)
+    if last_link:
         """We have received a link header and parse the latest page."""
-        pattern = (', <https:\/\/api\.github\.com'
-                   '\/.+\/.+\/%s'
-                   '\?page=(\d+).*>; rel=\"last\"') % key
-        last_page = re.search(pattern, link).group(1)
+        pattern = '.+\?page=(\d+).*'
+        last_page = re.search(pattern, last_link.get('url')).group(1)
         if last_page:
             url.replace('page=1', 'page=' + last_page)
             latest_items = query(url)
@@ -120,7 +118,6 @@ def find_projects(min_issues, min_pulls):
                                             repo['issues'],
                                             repo['pulls']))
             sys.stdout.flush()
-
 
 
 if __name__ == "__main__":
