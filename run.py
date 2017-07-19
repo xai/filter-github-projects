@@ -11,10 +11,6 @@ Finds popular projects for research purposes on Github.
 
 The goal is to filter the list of projects found
 by criteria like minimum number or issues or pull requests.
-
-TODO: - getting issue & pull request numbers
-      - filtering of projects
-      - search query without pre-selecting the language
 """
 
 import argparse
