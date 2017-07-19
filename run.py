@@ -21,6 +21,7 @@ import argparse
 import requests
 import json
 import re
+import sys
 
 
 def query(url):
@@ -85,7 +86,6 @@ def get_pulls(url):
 
 
 def find_projects(min_issues, min_pulls):
-    projects = []
     url = 'https://api.github.com/'
     search = ('search/repositories?q=stars:100'
              '+pushed:>2017-01-01'
@@ -113,9 +113,15 @@ def find_projects(min_issues, min_pulls):
         repo['issues'] = get_issues(repo['issues_url']) - repo['pulls']
 
         if repo['issues'] >= min_issues and repo['pulls'] >= min_pulls:
-            projects.append(repo)
+            print('%s;%s;%s;%d,%s;%s;%d' % (repo['owner']['login'],
+                                            repo['name'],
+                                            repo['html_url'],
+                                            repo['stargazers_count'],
+                                            repo['lang'],
+                                            repo['issues'],
+                                            repo['pulls']))
+            sys.stdout.flush()
 
-    return projects
 
 
 if __name__ == "__main__":
@@ -145,11 +151,4 @@ if __name__ == "__main__":
     user = args.user
 
     print('User;Project;Url;Stars;Language;Issues;Pull Requests')
-    for p in find_projects(args.min_issues, args.min_pulls):
-        print('%s;%s;%s;%d,%s;%s;%d' % (p['owner']['login'],
-                                        p['name'],
-                                        p['html_url'],
-                                        p['stargazers_count'],
-                                        p['lang'],
-                                        p['issues'],
-                                        p['pulls']))
+    find_projects(args.min_issues, args.min_pulls)
