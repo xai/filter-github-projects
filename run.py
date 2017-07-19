@@ -28,7 +28,7 @@ def get_language(url):
     size = 0
 
     if response.ok:
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         for k,v in result.items():
             if v > size:
                 size = v
@@ -54,9 +54,8 @@ def find_projects():
     query = 'search/repositories?q=language:%s&sort=stars&order=desc' % lang
 
     response = requests.get(url + query, auth=(user, token))
-
     if response.ok:
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         for repo in result['items']:
             repo['lang'] = get_language(repo['languages_url'])
             repo['issues'] = get_issues(repo['issues_url'])
