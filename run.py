@@ -20,38 +20,78 @@ TODO: - getting issue & pull request numbers
 import argparse
 import requests
 import json
+import re
 
 
-def get_language(url):
+def query(url):
     response = requests.get(url, auth=(user, token))
-    lang = ""
-    size = 0
 
     if response.ok:
-        result = json.loads(response.content.decode('utf-8'))
-        for k,v in result.items():
-            if v > size:
-                size = v
-                lang = k
-        return lang
+        return response
     else:
         response.raise_for_status()
 
 
+def get_language(url):
+    """Determines the language mostly used in a project."""
+
+    lang = ""
+    size = 0
+
+    response = query(url)
+    result = json.loads(response.content.decode('utf-8'))
+
+    for k,v in result.items():
+        if v > size:
+            size = v
+            lang = k
+
+    return lang
+
+
+def get_num_entries(url, key, arg=None):
+    """Calculates the number of entries in a paginated list."""
+
+    num_items = 0
+    url = url.replace('{/number}', '?page=1')
+    if arg:
+        url = ''.join([url, '&', arg])
+
+    response = query(url)
+    link = response.headers.get('Link', None)
+    if link:
+        # link = link.split(',')[1]
+        pattern = (', <https:\/\/api\.github\.com'
+                   '\/.+\/.+\/%s'
+                   '\?page=(\d+).*>; rel=\"last\"') % key
+        last_page = re.search(pattern, link).group(1)
+        if last_page:
+            url.replace('page=1', 'page=' + last_page)
+            latest_items = query(url)
+            num_items = 30 * (int(last_page) - 1) + \
+                    len(json.loads(latest_items.content.decode('utf-8')))
+    else:
+        num_items = len(json.loads(response.content.decode('utf-8')))
+
+    return num_items
+
+
 def get_issues(url):
-    # TODO
-    return 0
+    return get_num_entries(url, 'issues', 'state=all')
 
 
 def get_pulls(url):
-    # TODO
-    return 0
+    return get_num_entries(url, 'pulls', 'state=all')
 
 
-def find_projects():
+def find_projects(min_issues, min_pulls):
     projects = []
     url = 'https://api.github.com/'
-    query = 'search/repositories?q=stars:100+pushed:>2017-01-01&sort=stars&order=desc&per_page=100'
+    search = ('search/repositories?q=stars:100'
+             '+pushed:>2017-01-01'
+             '&sort=stars'
+             '&order=desc'
+             '&per_page=100')
 
     #We need set at least one qualifier(q) and we can define if we want sort or order
     #We can find the syntax in:
@@ -60,19 +100,20 @@ def find_projects():
     #search/repositories?q=stars:>1000+pushed:>2017
     #Example 2 - developed in java sort by stars, order desc and presenting 100 repositories per page
     #search/repositories?q=language:java&sort=stars&order=desc&per_page=100
- 
-    response = requests.get(url + query, auth=(user, token))
-    if response.ok:
-        result = json.loads(response.content.decode('utf-8'))
-        for repo in result['items']:
-            repo['lang'] = get_language(repo['languages_url'])
-            repo['issues'] = get_issues(repo['issues_url'])
-            repo['pulls'] = get_pulls(repo['pulls_url'])
 
-            # TODO: filtering of projects
+    response = query(''.join([url, search]))
+    result = json.loads(response.content.decode('utf-8'))
+    for repo in result['items']:
+        repo['lang'] = get_language(repo['languages_url'])
+        repo['pulls'] = get_pulls(repo['pulls_url'])
+
+        # Github treats pull requests as issues, so we have to subtract
+        # them from the number of issues in order to get the number of
+        # actual issues
+        repo['issues'] = get_issues(repo['issues_url']) - repo['pulls']
+
+        if repo['issues'] >= min_issues and repo['pulls'] >= min_pulls:
             projects.append(repo)
-    else:
-        response.raise_for_status()
 
     return projects
 
@@ -82,6 +123,14 @@ if __name__ == "__main__":
     global user
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--min-issues",
+                        help="Minimum number of issues",
+                        default=0,
+                        type=int)
+    parser.add_argument("-p", "--min-pulls",
+                        help="Minimum number of pull requests",
+                        default=0,
+                        type=int)
     parser.add_argument("-t", "--token",
                         help="API token",
                         type=str,
@@ -96,7 +145,7 @@ if __name__ == "__main__":
     user = args.user
 
     print('User;Project;Url;Stars;Language;Issues;Pull Requests')
-    for p in find_projects():
+    for p in find_projects(args.min_issues, args.min_pulls):
         print('%s;%s;%s;%d,%s;%s;%d' % (p['owner']['login'],
                                         p['name'],
                                         p['html_url'],

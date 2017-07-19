@@ -9,7 +9,5 @@ Please see [this](https://help.github.com/articles/creating-an-access-token-for-
 `./run.py -u <username> -t <token>`
 
 ## TODO
-- [ ] Retrieve number of issues + pull requests for each project
-- [ ] Filter projects according to specified criteria
 - [ ] Use pagination to retrieve more than 100 projects
 
