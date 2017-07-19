@@ -61,7 +61,7 @@ def get_num_entries(url, key, arg=None):
     response = query(url)
     link = response.headers.get('Link', None)
     if link:
-        # link = link.split(',')[1]
+        """We have received a link header and parse the latest page."""
         pattern = (', <https:\/\/api\.github\.com'
                    '\/.+\/.+\/%s'
                    '\?page=(\d+).*>; rel=\"last\"') % key
@@ -72,6 +72,7 @@ def get_num_entries(url, key, arg=None):
             num_items = 30 * (int(last_page) - 1) + \
                     len(json.loads(latest_items.content.decode('utf-8')))
     else:
+        """There is no link header because the result is not paginated."""
         num_items = len(json.loads(response.content.decode('utf-8')))
 
     return num_items
@@ -93,13 +94,14 @@ def find_projects(min_issues, min_pulls):
              '&order=desc'
              '&per_page=100')
 
-    #We need set at least one qualifier(q) and we can define if we want sort or order
-    #We can find the syntax in:
-    #(https://help.github.com/articles/searching-repositories/#search-based-on-when-a-repository-was-created-or-last-updated)
-    #Example 1 - more than 1000 stars and pushed in 2017
-    #search/repositories?q=stars:>1000+pushed:>2017
-    #Example 2 - developed in java sort by stars, order desc and presenting 100 repositories per page
-    #search/repositories?q=language:java&sort=stars&order=desc&per_page=100
+    """We need set at least one qualifier(q) and we can define if we want sort or order
+    We can find the syntax in:
+    (https://help.github.com/articles/searching-repositories/#search-based-on-when-a-repository-was-created-or-last-updated)
+    Example 1 - more than 1000 stars and pushed in 2017
+    search/repositories?q=stars:>1000+pushed:>2017
+    Example 2 - developed in java sort by stars, order desc and presenting 100 repositories per page
+    search/repositories?q=language:java&sort=stars&order=desc&per_page=100
+    """
 
     response = query(''.join([url, search]))
     result = json.loads(response.content.decode('utf-8'))
@@ -107,9 +109,10 @@ def find_projects(min_issues, min_pulls):
         repo['lang'] = get_language(repo['languages_url'])
         repo['pulls'] = get_pulls(repo['pulls_url'])
 
-        # Github treats pull requests as issues, so we have to subtract
-        # them from the number of issues in order to get the number of
-        # actual issues
+        """Github treats pull requests as issues, so we have to subtract
+        them from the number of issues in order to get the number of
+        actual issues.
+        """
         repo['issues'] = get_issues(repo['issues_url']) - repo['pulls']
 
         if repo['issues'] >= min_issues and repo['pulls'] >= min_pulls:
