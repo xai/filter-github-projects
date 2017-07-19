@@ -51,8 +51,16 @@ def get_pulls(url):
 def find_projects():
     projects = []
     url = 'https://api.github.com/'
-    query = 'search/repositories?q=language:%s&sort=stars&order=desc' % lang
+    query = 'search/repositories?q=stars:100+pushed:>2017-01-01&sort=stars&order=desc&per_page=100'
 
+    #We need set at least one qualifier(q) and we can define if we want sort or order
+    #We can find the syntax in:
+    #(https://help.github.com/articles/searching-repositories/#search-based-on-when-a-repository-was-created-or-last-updated)
+    #Example 1 - more than 1000 stars and pushed in 2017
+    #search/repositories?q=stars:>1000+pushed:>2017
+    #Example 2 - developed in java sort by stars, order desc and presenting 100 repositories per page
+    #search/repositories?q=language:java&sort=stars&order=desc&per_page=100
+ 
     response = requests.get(url + query, auth=(user, token))
     if response.ok:
         result = json.loads(response.content.decode('utf-8'))
