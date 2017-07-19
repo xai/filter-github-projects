@@ -28,7 +28,7 @@ def get_language(url):
     size = 0
 
     if response.ok:
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         for k,v in result.items():
             if v > size:
                 size = v
@@ -48,15 +48,22 @@ def get_pulls(url):
     return 0
 
 
-def find_projects(lang):
+def find_projects():
     projects = []
     url = 'https://api.github.com/'
-    query = 'search/repositories?q=language:%s&sort=stars&order=desc' % lang
+    query = 'search/repositories?q=stars:100+pushed:>2017-01-01&sort=stars&order=desc&per_page=100'
 
+    #We need set at least one qualifier(q) and we can define if we want sort or order
+    #We can find the syntax in:
+    #(https://help.github.com/articles/searching-repositories/#search-based-on-when-a-repository-was-created-or-last-updated)
+    #Example 1 - more than 1000 stars and pushed in 2017
+    #search/repositories?q=stars:>1000+pushed:>2017
+    #Example 2 - developed in java sort by stars, order desc and presenting 100 repositories per page
+    #search/repositories?q=language:java&sort=stars&order=desc&per_page=100
+ 
     response = requests.get(url + query, auth=(user, token))
-
     if response.ok:
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         for repo in result['items']:
             repo['lang'] = get_language(repo['languages_url'])
             repo['issues'] = get_issues(repo['issues_url'])
@@ -75,10 +82,6 @@ if __name__ == "__main__":
     global user
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--lang",
-                        help="Language",
-                        type=str,
-                        required=True)
     parser.add_argument("-t", "--token",
                         help="API token",
                         type=str,
@@ -93,7 +96,7 @@ if __name__ == "__main__":
     user = args.user
 
     print('User;Project;Url;Stars;Language;Issues;Pull Requests')
-    for p in find_projects(args.lang):
+    for p in find_projects():
         print('%s;%s;%s;%d,%s;%s;%d' % (p['owner']['login'],
                                         p['name'],
                                         p['html_url'],
