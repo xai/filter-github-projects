@@ -48,7 +48,7 @@ def get_pulls(url):
     return 0
 
 
-def find_projects(lang):
+def find_projects():
     projects = []
     url = 'https://api.github.com/'
     query = 'search/repositories?q=language:%s&sort=stars&order=desc' % lang
@@ -75,10 +75,6 @@ if __name__ == "__main__":
     global user
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--lang",
-                        help="Language",
-                        type=str,
-                        required=True)
     parser.add_argument("-t", "--token",
                         help="API token",
                         type=str,
@@ -93,7 +89,7 @@ if __name__ == "__main__":
     user = args.user
 
     print('User;Project;Url;Stars;Language;Issues;Pull Requests')
-    for p in find_projects(args.lang):
+    for p in find_projects():
         print('%s;%s;%s;%d,%s;%s;%d' % (p['owner']['login'],
                                         p['name'],
                                         p['html_url'],
