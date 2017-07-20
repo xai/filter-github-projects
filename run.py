@@ -103,6 +103,9 @@ def find_projects(min_issues, min_pulls):
         repo['lang'] = get_language(repo['languages_url'])
         repo['pulls'] = get_pulls(repo['pulls_url'])
 
+        if min_issues > 0 and not repo['has_issues']:
+            continue
+
         """Github treats pull requests as issues, so we have to subtract
         them from the number of issues in order to get the number of
         actual issues.
