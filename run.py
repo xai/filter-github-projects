@@ -55,16 +55,13 @@ def get_num_entries(url, key, arg=None):
         url = ''.join([url, '&', arg])
 
     response = query(url)
-    last_link =  response.links.get('last', None)
-    if last_link:
-        """We have received a link header and parse the latest page."""
+    if 'last' in response.links:
+        url = response.links['last']['url']
         pattern = '.+\?page=(\d+).*'
-        last_page = re.search(pattern, last_link.get('url')).group(1)
-        if last_page:
-            url.replace('page=1', 'page=' + last_page)
-            latest_items = query(url)
-            num_items = 30 * (int(last_page) - 1) + \
-                    len(json.loads(latest_items.content.decode('utf-8')))
+        last_page = re.search(pattern, url).group(1)
+        latest_items = query(url)
+        num_items = 30 * (int(last_page) - 1) + \
+                len(json.loads(latest_items.content.decode('utf-8')))
     else:
         """There is no link header because the result is not paginated."""
         num_items = len(json.loads(response.content.decode('utf-8')))
