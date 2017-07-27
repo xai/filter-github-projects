@@ -80,13 +80,14 @@ def get_pulls(url):
     return get_num_entries(url, 'pulls', 'state=all')
 
 
-def find_projects(min_issues, min_pulls):
-    url = 'https://api.github.com/'
-    search = ('search/repositories?q=stars:100'
-             '+pushed:>2017-01-01'
-             '&sort=stars'
-             '&order=desc'
-             '&per_page=100')
+def find_projects(min_issues, min_pulls, output_file=None):
+    url = ('https://api.github.com/'
+           'search/repositories?q=stars:100'
+           '+pushed:>2017-01-01'
+           '&sort=stars'
+           '&order=desc'
+           '&per_page=100'
+           '&page=1')
 
     """We need set at least one qualifier(q) and we can define if we want sort or order
     We can find the syntax in:
@@ -96,54 +97,67 @@ def find_projects(min_issues, min_pulls):
     Example 2 - developed in java sort by stars, order desc and presenting 100 repositories per page
     search/repositories?q=language:java&sort=stars&order=desc&per_page=100
     """
-    page = 1
-    pages = '&page='
-    response = query(''.join([url, search, pages, str(page)]))
-    totalResult = json.loads(response.content.decode('utf-8'))
-    counter = totalResult.get('total_count')
-    counter = counter - len(totalResult['items'])
+    response = query(url)
+    result = json.loads(response.content.decode('utf-8'))
 
-    while counter > 0:
-        page += 1
-        response = query(''.join([url, search, pages, str(page)]))
-        result = json.loads(response.content.decode('utf-8'))
+    csv_header = "User;Project;Stars;Language;Issues;Pull Requests;Url"
+    if output_file:
+        out = open(output_file, 'w')
+        out.write(csv_header + '\n')
+    else:
+        print(csv_header)
+
+    while True:
+        """Loop over result pages until there is no 'next page' link."""
+
         for repo in result['items']:
-            totalResult['items'].append(repo)
-        counter = counter - len(result['items'])
+            repo['lang'] = get_language(repo['languages_url'])
+            repo['pulls'] = get_pulls(repo['pulls_url'])
 
-    file = open('./output.txt', 'w')
+            if min_issues > 0 and not repo['has_issues']:
+                continue
 
-    file.write("User;Project;Stars;Language;Issues;Pull Requests;Url\n" )
+            """Github treats pull requests as issues, so we have to subtract
+            them from the number of issues in order to get the number of
+            actual issues.
+            """
+            repo['issues'] = get_issues(repo['issues_url']) - repo['pulls']
 
-    for repo in totalResult['items']:
-        repo['lang'] = get_language(repo['languages_url'])
-        repo['pulls'] = get_pulls(repo['pulls_url'])
+            if repo['issues'] >= min_issues \
+               and repo['pulls'] >= min_pulls \
+               and repo['lang']:
+                csv_row = '%s;%s;%d;%s;%s;%d;%s' % (repo['owner']['login'],
+                                                    repo['name'],
+                                                    repo['stargazers_count'],
+                                                    repo['lang'],
+                                                    repo['issues'],
+                                                    repo['pulls'],
+                                                    repo['html_url'])
+                if output_file:
+                    out.write(csv_row + '\n')
+                else:
+                    print(csv_row)
+                    sys.stdout.flush()
 
-        if min_issues > 0 and not repo['has_issues']:
-            continue
+        if 'next' in response.links:
+            url = response.links['next']['url']
+            response = query(url)
+            result = json.loads(response.content.decode('utf-8'))
+        else:
+            break
 
-        """Github treats pull requests as issues, so we have to subtract
-        them from the number of issues in order to get the number of
-        actual issues.
-        """
-        repo['issues'] = get_issues(repo['issues_url']) - repo['pulls']
-
-        if repo['issues'] >= min_issues and repo['pulls'] >= min_pulls and repo['lang']:
-            file.write('%s;%s;%d;%s;%s;%d;%s\n' % (repo['owner']['login'],
-                                            repo['name'],
-                                            repo['stargazers_count'],
-                                            repo['lang'],
-                                            repo['issues'],
-                                            repo['pulls'],
-                                            repo['html_url']))
-
-    file.close()
+    if output_file:
+        out.close()
 
 if __name__ == "__main__":
     global token
     global user
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("-o", "--output-file",
+                        help="Output file",
+                        default=None,
+                        type=str)
     parser.add_argument("-i", "--min-issues",
                         help="Minimum number of issues",
                         default=0,
@@ -165,4 +179,4 @@ if __name__ == "__main__":
     token = args.token
     user = args.user
 
-    find_projects(args.min_issues, args.min_pulls)
+    find_projects(args.min_issues, args.min_pulls, args.output_file)
