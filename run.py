@@ -56,6 +56,11 @@ def get_num_entries(url, key, arg=None):
 
     response = query(url)
     if 'last' in response.links:
+        """This is a paginated list of results.
+        We assume that 30 items are listed per page,
+        so by knowing the last page number, we can calculate
+        the total number without iterating through all pages.
+        """
         url = response.links['last']['url']
         pattern = '.+\?page=(\d+).*'
         last_page = re.search(pattern, url).group(1)
@@ -78,6 +83,8 @@ def get_pulls(url):
 
 
 def find_projects(min_issues, min_pulls, output_file=None):
+    """TODO: read search criteria from cmd line args"""
+
     url = ('https://api.github.com/'
            'search/repositories?q=stars:100'
            '+pushed:>2017-01-01'
@@ -86,14 +93,6 @@ def find_projects(min_issues, min_pulls, output_file=None):
            '&per_page=100'
            '&page=1')
 
-    """We need set at least one qualifier(q) and we can define if we want sort or order
-    We can find the syntax in:
-    (https://help.github.com/articles/searching-repositories/#search-based-on-when-a-repository-was-created-or-last-updated)
-    Example 1 - more than 1000 stars and pushed in 2017
-    search/repositories?q=stars:>1000+pushed:>2017
-    Example 2 - developed in java sort by stars, order desc and presenting 100 repositories per page
-    search/repositories?q=language:java&sort=stars&order=desc&per_page=100
-    """
     response = query(url)
     result = json.loads(response.content.decode('utf-8'))
 

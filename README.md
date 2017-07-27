@@ -8,4 +8,4 @@ Please see [this](https://help.github.com/articles/creating-an-access-token-for-
 ## Run
 `./run.py -u <username> -t <token> [-i <min-issues>] [-p <min-pulls>] [-o <output-file>]`
 
-The arguments -i, -p, and o are optional
+The arguments -i, -p, and -o are optional
