@@ -96,10 +96,20 @@ def find_projects(min_issues, min_pulls):
     Example 2 - developed in java sort by stars, order desc and presenting 100 repositories per page
     search/repositories?q=language:java&sort=stars&order=desc&per_page=100
     """
+    page = 1
+    pages = '&page='
+    response = query(''.join([url, search, pages, str(page)]))
+    totalResult = json.loads(response.content.decode('utf-8'))
+    counter = totalResult.get('total_count')
+    counter = counter - len(totalResult['items'])
 
-    response = query(''.join([url, search]))
-    result = json.loads(response.content.decode('utf-8'))
-    for repo in result['items']:
+    while counter > 0:
+        page += 1
+        response = query(''.join([url, search, pages, str(page)]))
+        result = json.loads(response.content.decode('utf-8'))
+        for repo in result['items']:
+            totalResult['items'].append(repo)
+        counter = counter - len(result['items'])
         repo['lang'] = get_language(repo['languages_url'])
         repo['pulls'] = get_pulls(repo['pulls_url'])
 
