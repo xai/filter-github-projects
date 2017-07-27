@@ -110,6 +110,12 @@ def find_projects(min_issues, min_pulls):
         for repo in result['items']:
             totalResult['items'].append(repo)
         counter = counter - len(result['items'])
+
+    file = open('./output.txt', 'w')
+
+    file.write("User;Project;Stars;Language;Issues;Pull Requests;Url\n" )
+
+    for repo in totalResult['items']:
         repo['lang'] = get_language(repo['languages_url'])
         repo['pulls'] = get_pulls(repo['pulls_url'])
 
@@ -128,10 +134,10 @@ def find_projects(min_issues, min_pulls):
                                             repo['stargazers_count'],
                                             repo['lang'],
                                             repo['issues'],
-            sys.stdout.flush()
                                             repo['pulls'],
                                             repo['html_url']))
 
+    file.close()
 
 if __name__ == "__main__":
     global token
@@ -159,5 +165,4 @@ if __name__ == "__main__":
     token = args.token
     user = args.user
 
-    print('User;Project;Url;Stars;Language;Issues;Pull Requests')
     find_projects(args.min_issues, args.min_pulls)
