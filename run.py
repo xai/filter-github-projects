@@ -122,15 +122,15 @@ def find_projects(min_issues, min_pulls):
         """
         repo['issues'] = get_issues(repo['issues_url']) - repo['pulls']
 
-        if repo['issues'] >= min_issues and repo['pulls'] >= min_pulls:
-            print('%s;%s;%s;%d,%s;%s;%d' % (repo['owner']['login'],
+        if repo['issues'] >= min_issues and repo['pulls'] >= min_pulls and repo['lang']:
+            file.write('%s;%s;%d;%s;%s;%d;%s\n' % (repo['owner']['login'],
                                             repo['name'],
-                                            repo['html_url'],
                                             repo['stargazers_count'],
                                             repo['lang'],
                                             repo['issues'],
-                                            repo['pulls']))
             sys.stdout.flush()
+                                            repo['pulls'],
+                                            repo['html_url']))
 
 
 if __name__ == "__main__":
