@@ -6,6 +6,6 @@ You have to register an API token first!
 Please see [this](https://help.github.com/articles/creating-an-access-token-for-command-line-use/) on how to generate a token.
 
 ## Run
-`./run.py -u <username> -t <token> [-i <min-issues>] [-p <min-pulls>] [-o <output-file>]`
+`./run.py -u <username> -t <token> [-i <min-issues>] [-p <min-pulls>] [-l <language>] [-o <output-file>]`
 
-The arguments -i, -p, and -o are optional
+The arguments -i, -p, -l, and -o are optional
