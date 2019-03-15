@@ -82,16 +82,20 @@ def get_pulls(url):
     return get_num_entries(url, 'pulls', 'state=all')
 
 
-def find_projects(min_issues, min_pulls, output_file=None):
+def find_projects(min_issues, min_pulls, language, output_file=None):
     """TODO: read search criteria from cmd line args"""
 
     url = ('https://api.github.com/'
            'search/repositories?q=stars:100'
-           '+pushed:>2017-01-01'
-           '&sort=stars'
-           '&order=desc'
-           '&per_page=100'
-           '&page=1')
+           '+pushed:>2017-01-01')
+
+    if language:
+        url = url + '+language:java'
+
+    url = url + ('&sort=stars'
+                 '&order=desc'
+                 '&per_page=100'
+                 '&page=1')
 
     response = query(url)
     result = json.loads(response.content.decode('utf-8'))
@@ -162,6 +166,10 @@ if __name__ == "__main__":
                         help="Minimum number of pull requests",
                         default=0,
                         type=int)
+    parser.add_argument("-l", "--language",
+                        help="Search for project using this language",
+                        default=None,
+                        type=str)
     parser.add_argument("-t", "--token",
                         help="API token",
                         type=str,
@@ -175,4 +183,4 @@ if __name__ == "__main__":
     token = args.token
     user = args.user
 
-    find_projects(args.min_issues, args.min_pulls, args.output_file)
+    find_projects(args.min_issues, args.min_pulls, args.language, args.output_file)
